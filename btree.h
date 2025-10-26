@@ -28,7 +28,7 @@ class BTree {
   int size(); // retorna el total de elementos insertados  
   
   // Construya un árbol B a partir de un vector de elementos ordenados
-  static BTree* build_from_ordered_vector(vector<T> elements);
+  static BTree* build_from_ordered_vector(vector<TK> elements, int M);
   // Verifique las propiedades de un árbol B
   bool check_properties();
 
