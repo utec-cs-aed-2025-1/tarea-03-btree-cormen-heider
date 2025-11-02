@@ -1,6 +1,8 @@
 #include "btree.h"
 #include <iostream>
+#include <string>
 #include <vector>
+#include <stack>
 
 using namespace std;
 
@@ -229,57 +231,134 @@ int BTree<TK>::height() {
     return height;
 }
 
+// Función auxiliar para convertir int a string
+string intToString(int num) {
+    if (num == 0) return "0";
+
+    bool isNegative = num < 0;
+    if (isNegative) num = -num;
+
+    string result = "";
+    while (num > 0) {
+        result = char('0' + (num % 10)) + result;
+        num /= 10;
+    }
+
+    if (isNegative) result = "-" + result;
+    return result;
+}
+
+// Función auxiliar para convertir float a string
+string floatToString(float num) {
+    int intPart = (int)num;
+    float fracPart = num - intPart;
+    if (fracPart < 0) fracPart = -fracPart;
+
+    string result = intToString(intPart);
+    result += ".";
+
+    for (int i = 0; i < 6; i++) {
+        fracPart *= 10;
+        int digit = (int)fracPart;
+        result += char('0' + digit);
+        fracPart -= digit;
+    }
+
+    return result;
+}
+
+// Función auxiliar para convertir double a string
+string doubleToString(double num) {
+    long long intPart = (long long)num;
+    double fracPart = num - intPart;
+    if (fracPart < 0) fracPart = -fracPart;
+
+    string result = intToString((int)intPart);
+    result += ".";
+
+    for (int i = 0; i < 6; i++) {
+        fracPart *= 10;
+        int digit = (int)fracPart;
+        result += char('0' + digit);
+        fracPart -= digit;
+    }
+
+    return result;
+}
+
+// Función template auxiliar para convertir TK a string
+template <typename T>
+string keyToString(const T& key);
+
+// Especialización para int
+template <>
+string keyToString<int>(const int& key) {
+    return intToString(key);
+}
+
+// Especialización para float
+template <>
+string keyToString<float>(const float& key) {
+    return floatToString(key);
+}
+
+// Especialización para double
+template <>
+string keyToString<double>(const double& key) {
+    return doubleToString(key);
+}
+
+// Especialización para string
+template <>
+string keyToString<string>(const string& key) {
+    return key;
+}
+
 template <typename TK>
 string BTree<TK>::toString(const string& sep) {
     // TODO: Implementar toString
     string result = "";
-
     if (!root) return "";
 
-    Node<TK>** stackManual = new Node<TK>*[1000];
-    int* indexStack = new int[1000];
-    int top = -1;
+    // Estructura para mantener el estado en el stack
+    struct StackFrame {
+        Node<TK>* node;
+        int keyIndex;
+        int state;  // Estado: 0 = no visitado, 1 = hijo izquierdo visitado, 2 = clave procesada
 
-    Node<TK>* current = root;
-    int currentIndex = 0;
+        StackFrame(Node<TK>* n, int idx, int s)
+            : node(n), keyIndex(idx), state(s) {}
+    };
 
-    while (current != nullptr || top >= 0) {
-        while (current != nullptr && currentIndex <= current->count) {
-            stackManual[++top] = current;
-            indexStack[top] = currentIndex;
+    stack<StackFrame> st;
+    st.push(StackFrame(root, 0, 0));
 
-            if (!current->leaf && currentIndex < current->count) {
-                current = current->children[currentIndex];
-                currentIndex = 0;
-            } else {
-                break;
-            }
+    while (!st.empty()) {
+        StackFrame frame = st.top();
+        st.pop();
+
+        Node<TK>* current = frame.node;
+        int keyIndex = frame.keyIndex;
+        if (keyIndex > current->count) {
+            continue;
         }
 
-        if (top >= 0) {
-            current = stackManual[top];
-            currentIndex = indexStack[top];
-            top--;
-
-            if (currentIndex < current->count) {
-                result += std::to_string(current->keys[currentIndex]) + sep;
-                currentIndex++;
-
-                if (!current->leaf && currentIndex <= current->count) {
-                    current = current->children[currentIndex];
-                    currentIndex = 0;
-                } else {
-                    current = nullptr;
-                }
+        if (frame.state == 0) {
+            if (!current->leaf && keyIndex <= current->count) {
+                st.push(StackFrame(current, keyIndex, 1));
+                st.push(StackFrame(current->children[keyIndex], 0, 0));
             } else {
-                current = nullptr;
+                st.push(StackFrame(current, keyIndex, 1));
+            }
+        } else if (frame.state == 1) {
+            if (keyIndex < current->count) {
+                result += keyToString(current->keys[keyIndex]) + sep;
+                st.push(StackFrame(current, keyIndex + 1, 0));
             }
         }
     }
 
-    delete[] stackManual;
-    delete[] indexStack;
-
+    // Eliminar el último separador
     if (!result.empty() && result.length() >= sep.length()) {
         result = result.substr(0, result.length() - sep.length());
     }
@@ -407,120 +486,59 @@ template <typename TK>
 int BTree<TK>::size() {
     if (!root) return 0;
 
-    int n = 0;
+    int count = 0;
 
-    Node<TK>** stackManual = new Node<TK>*[1000];
-    int* indexStack = new int[1000];
-    int top = -1;
+    struct StackFrame {
+        Node<TK>* node;
+        int keyIndex;
+        int state;
 
-    Node<TK>* current = root;
-    int currentIndex = 0;
+        StackFrame(Node<TK>* n, int idx, int s)
+            : node(n), keyIndex(idx), state(s) {}
+    };
 
-    while (current != nullptr || top >= 0) {
-        while (current != nullptr && currentIndex <= current->count) {
-            stackManual[++top] = current;
-            indexStack[top] = currentIndex;
+    stack<StackFrame> st;
+    st.push(StackFrame(root, 0, 0));
 
-            if (!current->leaf && currentIndex < current->count) {
-                current = current->children[currentIndex];
-                currentIndex = 0;
-            } else {
-                break;
-            }
+    while (!st.empty()) {
+        StackFrame frame = st.top();
+        st.pop();
+
+        Node<TK>* current = frame.node;
+        int keyIndex = frame.keyIndex;
+
+        if (keyIndex > current->count) {
+            continue;
         }
 
-        if (top >= 0) {
-            current = stackManual[top];
-            currentIndex = indexStack[top];
-            top--;
-
-            if (currentIndex < current->count) {
-                n++;
-                currentIndex++;
-
-                if (!current->leaf && currentIndex <= current->count) {
-                    current = current->children[currentIndex];
-                    currentIndex = 0;
-                } else {
-                    current = nullptr;
-                }
+        if (frame.state == 0) {
+            if (!current->leaf && keyIndex <= current->count) {
+                st.push(StackFrame(current, keyIndex, 1));
+                st.push(StackFrame(current->children[keyIndex], 0, 0));
             } else {
-                current = nullptr;
+                st.push(StackFrame(current, keyIndex, 1));
+            }
+        } else if (frame.state == 1) {
+            if (keyIndex < current->count) {
+                count++;
+                st.push(StackFrame(current, keyIndex + 1, 0));
             }
         }
     }
 
-    delete[] stackManual;
-    delete[] indexStack;
-
-    return n; // Retornar el contador de elementos
+    return count;
 }
 
 template <typename TK>
 BTree<TK>* BTree<TK>::build_from_ordered_vector(vector<TK> elements, int M) {
-    // TODO: Implementar build_from_ordered_vector
     BTree<TK>* tree = new BTree<TK>(M);
 
     if (elements.empty()) {
         return tree;
     }
 
-    int maxKeys = M - 1;
-    Node<TK>** leafNodes = new Node<TK>*[elements.size()];
-    int leafCount = 0;
-
-    for (size_t i = 0; i < elements.size(); ) {
-        Node<TK>* leaf = new Node<TK>(M);
-        leaf->leaf = true;
-
-        int keysNode = 0;
-        while (i < elements.size() && keysNode < maxKeys) {
-            leaf->keys[keysNode] = elements[i];
-            keysNode++;
-            i++;
-        }
-        leaf->count = keysNode;
-
-        leafNodes[leafCount++] = leaf;
-    }
-
-    Node<TK>** currentLevel = leafNodes;
-    int currentLevelCount = leafCount;
-
-    while (currentLevelCount > 1) {
-        Node<TK>** nextLevel = new Node<TK>*[currentLevelCount];
-        int nextLevelCount = 0;
-        for (int i = 0; i < currentLevelCount; ) {
-            Node<TK>* parent = new Node<TK>(M);
-            parent->leaf = false;
-
-            int childrenCount = 0;
-            while (i < currentLevelCount && childrenCount < M) {
-                parent->children[childrenCount] = currentLevel[i];
-
-                if (childrenCount > 0) {
-                    parent->keys[childrenCount - 1] = currentLevel[i]->keys[0];
-                }
-
-                childrenCount++;
-                i++;
-            }
-
-            parent->count = childrenCount - 1;
-            nextLevel[nextLevelCount++] = parent;
-        }
-        if (currentLevel != leafNodes) {
-            delete[] currentLevel;
-        }
-
-        currentLevel = nextLevel;
-        currentLevelCount = nextLevelCount;
-    }
-    tree->root = currentLevel[0];
-
-    delete[] leafNodes;
-    if (currentLevel != leafNodes) {
-        delete[] currentLevel;
+    for (size_t i = 0; i < elements.size(); i++) {
+        tree->insert(elements[i]);
     }
 
     return tree;
