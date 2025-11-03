@@ -17,7 +17,7 @@ struct Node {
   Node() : keys(nullptr), children(nullptr), count(0), leaf(true) {}
   Node(int M) {
     keys = new TK[M - 1];
-    children = new Node<TK>*[M];
+    children = new Node<TK>*[M+1];
     count = 0;
     leaf = true;
 

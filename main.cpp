@@ -64,8 +64,7 @@ int main() {
       cout<<"El árbol 2 cumple con las propiedades de un árbol B."<<endl;      
   }else{
       cout<<"El árbol 2 no cumple con las propiedades de un árbol B."<<endl;
-  }    
-
+  }
   delete btree;
   delete btree2;
   
