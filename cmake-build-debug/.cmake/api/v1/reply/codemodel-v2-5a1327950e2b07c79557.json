@@ -1,0 +1,60 @@
+{
+	"configurations" : 
+	[
+		{
+			"directories" : 
+			[
+				{
+					"build" : ".",
+					"jsonFile" : "directory-.-Debug-d0094a50bb2071803777.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.29"
+					},
+					"projectIndex" : 0,
+					"source" : ".",
+					"targetIndexes" : 
+					[
+						0
+					]
+				}
+			],
+			"name" : "Debug",
+			"projects" : 
+			[
+				{
+					"directoryIndexes" : 
+					[
+						0
+					],
+					"name" : "tarea_03_btree_cormen_heider",
+					"targetIndexes" : 
+					[
+						0
+					]
+				}
+			],
+			"targets" : 
+			[
+				{
+					"directoryIndex" : 0,
+					"id" : "tarea_03_btree_cormen_heider::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-tarea_03_btree_cormen_heider-Debug-6d8f35f0360b12cfb2e6.json",
+					"name" : "tarea_03_btree_cormen_heider",
+					"projectIndex" : 0
+				}
+			]
+		}
+	],
+	"kind" : "codemodel",
+	"paths" : 
+	{
+		"build" : "C:/Users/USUARIO/CLionProjects/tarea-03-btree-cormen-heider/cmake-build-debug",
+		"source" : "C:/Users/USUARIO/CLionProjects/tarea-03-btree-cormen-heider"
+	},
+	"version" : 
+	{
+		"major" : 2,
+		"minor" : 7
+	}
+}
